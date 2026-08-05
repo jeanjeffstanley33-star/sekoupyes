@@ -13,6 +13,12 @@
 <meta name="google" content="notranslate">
 <meta name="robots" content="notranslate">
 <title>SekouPyès</title>
+<meta property="og:title" content="SekouPy\u00e8s \u2014 Skane \u2022 Verifye \u2022 Rekipere" />
+<meta property="og:description" content="Konekte moun ki p\u00e8di py\u00e8s idantite yo ak moun ki jwenn yo a. Fasil, rapid, 100% sekirize." />
+<meta property="og:image" content="https://www.sekoupyes.com/icon-512.png" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.sekoupyes.com" />
+<meta name="twitter:card" content="summary_large_image" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -891,8 +897,8 @@
     const displayPhone = unlocked ? realPhone : maskPhone(realPhone);
     const shareOpen = shareMenuOpenId === piece.id;
 
-    const shareText = "Mwen jwenn oswa mwen wè yon avi sou yon py\u00e8s idantite (" + (piece.category || "") + ") ki gen non \"" + (piece.full_name || "") +
-      "\" pibliye sou SekouPy\u00e8s. Si se pyès ou, oswa ou rekonèt li, telechaje SekouPyès sou Google Play Store oswa vizite www.sekoupyes.com pou chèche l ak konfime li se pou ou.";
+    const shareText = "Mwen Jwenn Oswa mwen W\u00e8 yon avi sou Py\u00e8s idantite sa ! \"" + (piece.full_name || "") +
+      "\" Pibliye sou aplikasyon SekouPy\u00e8s. Si se Py\u00e8s ou oswa ou rekon\u00e8t m\u00e8t li, Telechaje aplikasyon SekouPy\u00e8s la sou Google Play Store, App Store oswa vizite sit www.sekoupyes.com pou kapab Jwenn plis enf\u00f2masyon sou py\u00e8s idantite sa.";
 
     let shareMenuHtml = "";
     if (shareOpen) {
@@ -2704,7 +2710,7 @@
       '<div class="lightbox-img-wrap" id="lightboxImgWrap">' +
         '<img id="lightboxImg" class="lightbox-img" src="' + lightboxImageUrl + '" alt="Foto py\u00e8s" style="transform:translate(0px,0px) scale(1);" />' +
       '</div>' +
-      '<div class="lightbox-hint">Pinch pou zoom \u2022 D\u00e8bleple pou zoom rapid</div>' +
+      '<div class="lightbox-hint">Foto py\u00e8s idantite \u2014 pwoteje ak filigran SekouPy\u00e8s</div>' +
     '</div>';
   }
 
@@ -2818,6 +2824,7 @@
 
             '<h4 style="font-family:\'Fraunces\',serif;font-size:14px;color:var(--navy);margin:14px 0 8px;">Si ou p\u00e8di yon py\u00e8s</h4>' +
             '<p class="accordion-note">Tape non ou \u00ab<span style="color:var(--navy);font-weight:700;">JAN LI EKRI SOU PY\u00c8S LA</span>\u00bb nan ba de rech\u00e8ch la.</p>' +
+            '<p style="text-align:center;font-weight:700;color:var(--gold);font-size:13.5px;margin:10px 0 8px;">\u00c8ske Py\u00e8s Ou Pibliye?</p>' +
             '<ul class="accordion-options">' +
               '<li><span class="opt-label">Si Wi,</span> antre nan piblikasyon an epi swiv enstriksyon yo pou w kapab debloke kontak moun ki jwenn py\u00e8s idantite la epi antre an kominikasyon avè l.</li>' +
               '<li><span class="opt-label">Si Non,</span> kreye yon al\u00e8t otomatik, touswit yon moun pibliye li nap av\u00e8ti w.</li>' +
@@ -4607,8 +4614,8 @@
         const action = btn.getAttribute("data-share-action");
         const pieceId = btn.getAttribute("data-piece-id");
         const piece = [latestPiece].concat(searchRecentPieces, searchResults).filter(Boolean).find(function (p) { return p.id === pieceId; });
-        const text = "Mwen jwenn oswa mwen w\u00e8 yon avi sou yon py\u00e8s idantite" + (piece ? " (\"" + piece.full_name + "\")" : "") +
-          " pibliye sou SekouPy\u00e8s. Si se py\u00e8s ou, oswa ou rekon\u00e8t li, telechaje SekouPy\u00e8s sou Google Play Store oswa vizite www.sekoupyes.com pou ch\u00e8che l ak konfime li se pou ou.";
+        const text = "Mwen Jwenn Oswa mwen W\u00e8 yon avi sou Py\u00e8s idantite sa ! \"" + (piece ? piece.full_name : "") +
+          "\" Pibliye sou aplikasyon SekouPy\u00e8s. Si se Py\u00e8s ou oswa ou rekon\u00e8t m\u00e8t li, Telechaje aplikasyon SekouPy\u00e8s la sou Google Play Store, App Store oswa vizite sit www.sekoupyes.com pou kapab Jwenn plis enf\u00f2masyon sou py\u00e8s idantite sa.";
         if (action === "wa") window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
         else if (action === "fb") window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(window.location.href), "_blank");
         else if (action === "x") window.open("https://twitter.com/intent/tweet?text=" + encodeURIComponent(text), "_blank");
