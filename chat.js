@@ -10,6 +10,7 @@ module.exports = async (req, res) => {
     return;
   }
 
+  
   if (!process.env.OPENAI_API_KEY) {
     res.status(500).json({
       error:
