@@ -2332,6 +2332,25 @@
     paymentSubmitting = false;
     paymentStep = "submitted";
     render();
+    startFastUnlockPoll(paymentPieceId);
+  }
+
+  let fastUnlockPollTimer = null;
+
+  function startFastUnlockPoll(pieceId) {
+    stopFastUnlockPoll();
+    let elapsed = 0;
+    fastUnlockPollTimer = setInterval(async function () {
+      elapsed += 3000;
+      await loadMyUnlockedPieces();
+      if (myUnlockedPieceIds.indexOf(pieceId) !== -1 || elapsed > 180000) {
+        stopFastUnlockPoll();
+      }
+    }, 3000);
+  }
+
+  function stopFastUnlockPoll() {
+    if (fastUnlockPollTimer) { clearInterval(fastUnlockPollTimer); fastUnlockPollTimer = null; }
   }
 
   function renderPaymentModal() {
@@ -6630,6 +6649,7 @@
       else loadSearchRecent();
     }
     loadPublicAnnouncements(false);
+    loadMyUnlockedPieces();
     if (currentView === "ceoAdmin" && isCeo()) {
       if (ceoAdminActiveTab === "moderation") loadCeoModeration();
       if (ceoAdminActiveTab === "payments") loadCeoAdminPayments();
