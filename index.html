@@ -3008,14 +3008,11 @@
   }
 
   // ---------- Vizyalizè foto plen ekran (zoom + telechaje) ----------
-  let lightboxHistoryPushed = false;
-
   function openLightbox(url) {
     if (!url) return;
     lightboxImageUrl = url;
     lightboxScale = 1; lightboxPanX = 0; lightboxPanY = 0;
     lightboxOpen = true;
-    try { history.pushState({ sekoupyesLightbox: true }, "", location.href); lightboxHistoryPushed = true; } catch (e) { lightboxHistoryPushed = false; }
     render();
   }
 
@@ -3023,10 +3020,6 @@
     lightboxOpen = false;
     lightboxImageUrl = "";
     render();
-    if (lightboxHistoryPushed) {
-      lightboxHistoryPushed = false;
-      try { history.back(); } catch (e) { /* pa gen pwoblèm */ }
-    }
   }
 
   function applyLightboxTransform() {
@@ -3460,7 +3453,7 @@
     let recentHtml;
     if (latestPiece) {
       recentHtml = renderPieceCard(latestPiece, { allowUnlock: false, forceLocked: true }) +
-      '<div class="see-more-note" id="seeMoreNote">W\u00e8 Plis Py\u00e8s Pibliye \u2014 Tape pou rech\u00e8che !</div>';
+      '<div class="see-more-note" id="seeMoreNote">W\u00e8 plis Py\u00e8s ki pibliye...</div>';
     } else {
       recentHtml = '<div class="empty-state">Pa gen py\u00e8s ki pibliye resamman.' +
         '<a href="#" id="publishFirstLink">Pibliye premye py\u00e8s la \u2192</a></div>';
@@ -5300,6 +5293,7 @@
     });
 
     attachEvents();
+    syncNavHistory();
   }
 
   let viewHistory = [];
@@ -6512,13 +6506,48 @@
     }
   }, true);
 
-  window.addEventListener("popstate", function () {
-    if (lightboxOpen) {
-      lightboxOpen = false;
-      lightboxImageUrl = "";
-      lightboxHistoryPushed = false;
+  // ---------- Sistèm istwa navigasyon inifye (bouton retou telefòn) ----------
+  // Swiv OTOMATIKMAN chak chanjman ekran (currentView), kamera, ak lightbox —
+  // pou bouton "retou" telefòn nan toujou fè yon retou ETAP PA ETAP anndan
+  // aplikasyon an, olye fèmen aplikasyon an nèt. Moun nan soti sèlman lè li
+  // rive sou Ak\u00e8y (san lòt bagay louvri) epi peze retou ANK\u00d2.
+  let lastNavSignature = null;
+  let isRestoringFromPopstate = false;
+
+  function currentNavSignature() {
+    return currentView + "|" + (cameraModalOpen ? "1" : "0") + "|" + (lightboxOpen ? "1" : "0");
+  }
+
+  function syncNavHistory() {
+    if (!authInitialized) return;
+    const sig = currentNavSignature();
+    if (isRestoringFromPopstate) {
+      lastNavSignature = sig;
+      isRestoringFromPopstate = false;
+      return;
+    }
+    if (lastNavSignature !== null && sig !== lastNavSignature) {
+      try {
+        history.pushState(
+          { sekoupyesNav: true, view: currentView, cam: cameraModalOpen, lb: lightboxOpen },
+          "", location.href
+        );
+      } catch (e) { /* pa gen pwoblèm */ }
+    }
+    lastNavSignature = sig;
+  }
+
+  window.addEventListener("popstate", function (e) {
+    if (e.state && e.state.sekoupyesNav) {
+      isRestoringFromPopstate = true;
+      currentView = e.state.view || "home";
+      cameraModalOpen = !!e.state.cam;
+      lightboxOpen = !!e.state.lb;
+      if (!lightboxOpen) lightboxImageUrl = "";
       render();
     }
+    // Si pa gen state sekoupyesNav (rive nan rasin nan, deja sou Ak\u00e8y san
+    // anyen louvri), nou pa fè anyen — navigat\u00e8 a kite moun nan soti nòmalman.
   });
 
   // ---------- Aksyon an Dir\u00e8k (Realtime) pou py\u00e8s ak notifikasyon ----------
