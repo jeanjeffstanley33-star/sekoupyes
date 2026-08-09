@@ -47,7 +47,7 @@
   * { scrollbar-width: none; -ms-overflow-style: none; }
   *::-webkit-scrollbar { display: none; }
   body { font-family: 'Inter', sans-serif; background: var(--paper); overflow-x: hidden; }
-  #app { position: relative; width: 100%; min-height: 100vh; max-width: 900px; margin: 0 auto; }
+  #app { position: relative; width: 100%; min-height: 100vh; max-width: 480px; margin: 0 auto; background: var(--paper); box-shadow: 0 0 60px rgba(0,0,0,0.15); }
   .hidden { display: none !important; }
   .view { display: none; }
   .view.active { display: block; }
@@ -491,12 +491,13 @@
 
   /* ---------- Bottom nav ---------- */
   .bottom-nav {
-    position: fixed; left: 16px; right: 16px; bottom: max(16px, env(safe-area-inset-bottom));
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: max(16px, env(safe-area-inset-bottom));
+    width: calc(100% - 32px); max-width: 448px;
     background: var(--paper); border-radius: 20px; box-shadow: 0 10px 30px rgba(22,35,63,0.25);
     display: flex; align-items: center; padding: 10px 6px; z-index: 15;
     transition: transform 0.2s ease, opacity 0.2s ease;
   }
-  .bottom-nav.kb-hidden { transform: translateY(120%); opacity: 0; pointer-events: none; }
+  .bottom-nav.kb-hidden { transform: translateX(-50%) translateY(120%); opacity: 0; pointer-events: none; }
   .nav-item {
     flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
     background: none; border: none; cursor: pointer; color: var(--gold); font-size: 11px;
@@ -548,7 +549,7 @@
   .chat-image-preview-bar img { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; }
 
   /* ---------- Kominote (community chat) ---------- */
-  .community-page { position: fixed; top: 0; left: 0; right: 0; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; z-index: 50; }
+  .community-page { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; z-index: 50; background: var(--paper); }
   .community-header { background: var(--navy); padding: 12px 16px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
   .community-body { flex: 1; overflow-y: auto; padding: 14px; background: var(--paper-2); display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
   .comm-bubble-wrap { display: flex; flex-direction: column; max-width: 78%; }
@@ -1300,8 +1301,6 @@
   let ceoResetting = false;
   let ceoAdminCommunityMsgs = [];
   let ceoCommunityFilter = "";
-  let pushSubscribing = false;
-  let pushSubscribeMsg = "";
   let ceoAdminCommunityLoaded = false;
   let ceoAdminChatLogs = [];
   let ceoAdminChatLogsLoaded = false;
@@ -1553,9 +1552,16 @@
         .from("pieces").select("*").eq("publisher_uid", uid).order("created_at", { ascending: false });
       profileTabItems.jwenn = myPieces || [];
       profileCounts.jwenn = (myPieces || []).length;
-      profileTabItems.match = (myPieces || []).filter(function (p) { return p.fee_paid; });
-      profileCounts.match = profileTabItems.match.length;
-    } catch (e) { profileTabItems.jwenn = []; profileTabItems.match = []; }
+    } catch (e) { profileTabItems.jwenn = []; }
+
+    try {
+      const { data: myMatches } = await supabaseClient
+        .from("matches").select("*")
+        .or("alert_uid.eq." + uid + ",piece_uid.eq." + uid)
+        .order("created_at", { ascending: false });
+      profileTabItems.match = myMatches || [];
+      profileCounts.match = (myMatches || []).length;
+    } catch (e) { profileTabItems.match = []; }
 
     try {
       const { data: myAlerts } = await supabaseClient
@@ -1637,15 +1643,25 @@
         return nameSimilarity(a.full_name || "", piece.full_name || "") >= 0.9;
       });
       for (const a of matches) {
-        // Notifye moun ki te kreye al\u00e8t la
+        // Anrejistre match la tout bon, pou l parèt nan onglè "Match" pou tou de moun yo
+        await supabaseClient.from("matches").insert({
+          alert_id: a.id,
+          piece_id: piece.id,
+          alert_uid: a.requester_uid,
+          piece_uid: piece.publisher_uid || "",
+          full_name: piece.full_name,
+          category: piece.category,
+        });
+
+        // Notifye moun ki te kreye al\u00e8t la (moun ki t ap ch\u00e8che a)
         await supabaseClient.from("announcements").insert({
-          message: "\uD83C\uDF89 Bòn nouvèl! Yon py\u00e8s ki matche ak rech\u00e8ch ou a pibliye: \"" + piece.full_name + "\" (" + (piece.category || "") + "). Ale nan Rech\u00e8ch pou w wè l epi debloke kontak la!",
+          message: "\uD83C\uDF89 Al\u00e8t ou te kreye a jwenn yon match! Yon moun fenk pibliye py\u00e8s sa a, al nan rech\u00e8ch la pou w ka jwenn plis detay.",
           target_uid: a.requester_uid,
         });
-        // Konfime bay moun ki pibliye/jwenn py\u00e8s la tou
+        // Notifye moun ki pibliye/jwenn py\u00e8s la
         if (piece.publisher_uid) {
           await supabaseClient.from("announcements").insert({
-            message: "\u2705 Yon moun ki t ap ch\u00e8che \"" + piece.full_name + "\" resevwa yon al\u00e8t sou py\u00e8s ou pibliye a. Li ka kontakte w byent\u00f4!",
+            message: "\u2705 Py\u00e8s ou pibliye a jwenn yon match ak yon moun ki te kreye yon al\u00e8t pou li. Atann ou pou moun sa a kontakte w.",
             target_uid: piece.publisher_uid,
           });
         }
@@ -1811,45 +1827,6 @@
     ceoResetPinInput = "";
     await loadCeoAdminOverview();
     await refreshPieces();
-    render();
-  }
-
-  function urlBase64ToUint8Array(base64String) {
-    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-    const rawData = atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i);
-    return outputArray;
-  }
-
-  async function subscribeToPushNotifications() {
-    pushSubscribeMsg = "";
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      pushSubscribeMsg = "Navigat\u00e8 sa a pa sipòte notifikasyon push.";
-      render(); return;
-    }
-    pushSubscribing = true; render();
-    try {
-      const reg = await navigator.serviceWorker.register("/sw.js");
-      // Tann Service Worker la vin AKTIF tout bon anvan nou eseye abòne l —
-      // se sa ki te lakòz erè "no active Service Worker" ak bezwen klike 2 fwa.
-      await navigator.serviceWorker.ready;
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        pushSubscribeMsg = "Pèmisyon refize. Aktive notifikasyon nan reglaj navigat\u00e8 w la.";
-        pushSubscribing = false; render(); return;
-      }
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-      });
-      await supabaseClient.from("push_subscriptions").upsert({ uid: visitorId(), subscription: sub.toJSON() }, { onConflict: "uid" });
-      pushSubscribeMsg = "\u2705 Notifikasyon push aktive! W ap resevwa yo menm si aplikasyon an fèmen.";
-    } catch (e) {
-      pushSubscribeMsg = "Er\u00e8: " + e.message;
-    }
-    pushSubscribing = false;
     render();
   }
 
@@ -2372,8 +2349,6 @@
       } else if (currentView !== "ceoAdmin") {
         currentView = "home";
       }
-      // Aktive notifikasyon push otomatikman — moun nan pa bezwen peze bouton an
-      subscribeToPushNotifications();
     }
     authInitialized = true;
     render();
@@ -2386,7 +2361,6 @@
     session = res.data.session;
     if (session) {
       onboardingVisible = false;
-      subscribeToPushNotifications();
     }
     authInitialized = true;
     render();
@@ -3370,13 +3344,7 @@
   function renderAdAndFooter(showUid, flush, showDisconnect) {
     let html = renderAdCarousel();
     if (showDisconnect) {
-      html += '<div style="margin-top:14px;padding:14px;background:var(--paper-2);border-radius:14px;">' +
-        '<div style="font-weight:700;color:var(--navy);font-size:13px;margin-bottom:4px;">\uD83D\uDD14 Notifikasyon Push</div>' +
-        '<p style="font-size:11.5px;color:var(--text-gray);margin:0 0 8px;">Resevwa yon notifikasyon menm si aplikasyon an f\u00e8men, chak fwa gen yon match ak al\u00e8t ou oswa yon nouvo mesaj ki gade w.</p>' +
-        (pushSubscribeMsg ? '<div style="font-size:11.5px;color:var(--navy);margin-bottom:6px;">' + pushSubscribeMsg + '</div>' : '') +
-        '<button class="secondary-btn" id="pushSubscribeBtnAccount" style="margin:0;width:100%;"' + (pushSubscribing ? " disabled" : "") + '>' + (pushSubscribing ? "Ap aktive..." : "Aktive Notifikasyon Push") + '</button>' +
-      '</div>' +
-      '<button id="signOutBtn" style="display:block;margin:14px auto 0;background:var(--red);color:#fff;border:none;border-radius:20px;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;">Dekonekte</button>' +
+      html += '<button id="signOutBtn" style="display:block;margin:14px auto 0;background:var(--red);color:#fff;border:none;border-radius:20px;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;">Dekonekte</button>' +
         '<button id="deleteAccountLinkBtn" style="display:block;margin:12px auto 0;background:none;border:none;color:var(--red);font-size:11.5px;text-decoration:underline;cursor:pointer;">Efase Kont Mwen Nèt</button>';
     }
     html += '<div class="site-footer"' + (flush ? ' style="padding-left:0;padding-right:0;"' : '') + '>' +
@@ -4262,10 +4230,6 @@
   }
 
   // ---------- CEO Admin page ----------
-  // Kle piblik VAPID pou notifikasyon push — SAN DANJE pou ekspoze bò kliyan an
-  // (se sèlman kle PRIVE a ki dwe rete sekrè sou Vercel).
-  const VAPID_PUBLIC_KEY = "BHXZgPbp8JZdLOs5BQ3vxK76qHBVCQ7n7JXv-xqAFWNLDD4O89QWNwgs4H0nH4Uuu86WudOJr0_TA7tydkmwM0Y";
-
   const CEO_EXTERNAL_SERVICES = [
     { name: "Claude AI", url: "https://claude.ai", color: "#D97757" },
     { name: "Gemini", url: "https://gemini.google.com", color: "#4285F4" },
@@ -4288,10 +4252,6 @@
       '<div class="stat-card"><div class="stat-value">' + ceoAdminStats.payments + '</div><div class="stat-label">Demann Peman</div></div>' +
       '<div class="stat-card"><div class="stat-value">' + ceoAdminStats.community + '</div><div class="stat-label">Mesaj Kominote</div></div>' +
     '</div>' +
-    '<div class="section-title" style="padding:16px 0 8px;">Notifikasyon Push (peman nouvo)</div>' +
-    '<p style="font-size:11.5px;color:var(--text-gray);margin-top:-4px;">Resevwa yon notifikasyon sou telef\u00f2n ou chak fwa yon nouvo demann peman antre \u2014 menm si aplikasyon an fèmen.</p>' +
-    (pushSubscribeMsg ? '<div style="font-size:12px;color:var(--navy);margin-bottom:8px;">' + pushSubscribeMsg + '</div>' : '') +
-    '<button class="secondary-btn" id="pushSubscribeBtn"' + (pushSubscribing ? " disabled" : "") + '>' + (pushSubscribing ? "Ap aktive..." : "Aktive Notifikasyon Push") + '</button>' +
     '<div class="section-title" style="padding:16px 0 8px;">Voye Notifikasyon Jeneral</div>' +
     '<p style="font-size:11.5px;color:var(--text-gray);margin-top:-4px;">Mesaj sa a ap parèt bay TOUT itilizat\u00e8 yo (konekte oswa non) nan paj Notifikasyon yo.</p>' +
     (ceoAnnounceSuccess ? '<div style="color:var(--green);font-size:12.5px;font-weight:600;margin-bottom:6px;">' + ceoAnnounceSuccess + '</div>' : '') +
@@ -6108,10 +6068,6 @@
     const ceoAnnounceInput = q("ceoAnnounceInput"), ceoAnnounceSendBtn = q("ceoAnnounceSendBtn");
     if (ceoAnnounceInput) ceoAnnounceInput.addEventListener("input", function () { ceoAnnounceMessage = ceoAnnounceInput.value; });
     if (ceoAnnounceSendBtn) ceoAnnounceSendBtn.addEventListener("click", ceoSendAnnouncement);
-    const pushSubscribeBtn = q("pushSubscribeBtn");
-    if (pushSubscribeBtn) pushSubscribeBtn.addEventListener("click", subscribeToPushNotifications);
-    const pushSubscribeBtnAccount = q("pushSubscribeBtnAccount");
-    if (pushSubscribeBtnAccount) pushSubscribeBtnAccount.addEventListener("click", subscribeToPushNotifications);
     const ceoManualRefreshBtn = q("ceoManualRefreshBtn");
     if (ceoManualRefreshBtn) ceoManualRefreshBtn.addEventListener("click", function () {
       loadCeoAdminOverview();
