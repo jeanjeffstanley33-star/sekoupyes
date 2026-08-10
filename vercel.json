@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    { "source": "/privacy", "destination": "/index.html" },
+    { "source": "/gid-sekirite", "destination": "/index.html" },
+    { "source": "/efase-kont", "destination": "/index.html" },
+    { "source": "/api/(.*)", "destination": "/api/$1" }
+  ]
+}
